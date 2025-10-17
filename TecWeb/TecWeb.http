@@ -1,0 +1,6 @@
+@TecWeb_HostAddress = http://localhost:5136
+
+GET {{TecWeb_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
