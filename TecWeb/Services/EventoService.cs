@@ -98,7 +98,7 @@ namespace TecWeb.Services
 
             return ServiceResult<List<EventoDto>>.Success(_mapper.Map<List<EventoDto>>(eventos));
         }
-
+        //
         public async Task<ServiceResult<EventoDto>> ObtenerEventoPorIdAsync(int id)
         {
             var evento = await _context.Eventos
