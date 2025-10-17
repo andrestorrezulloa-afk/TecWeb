@@ -1,4 +1,4 @@
-﻿// Services/EventoService.cs
+﻿
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using TecWeb.DTOs;
@@ -21,14 +21,11 @@ namespace TecWeb.Services
         {
             if (eventoDto == null)
                 return ServiceResult<EventoDto>.Failure("Evento nulo.");
-
-            // Validar que el usuario asignado exista (regla de BD -> asincrónica)
             var usuarioExiste = await _context.Usuarios.AnyAsync(u => u.UsuarioId == eventoDto.UsuarioId);
             if (!usuarioExiste)
                 return ServiceResult<EventoDto>.Failure("Usuario asignado no existe.");
 
-            // (Opcional) Validación de conflicto de horarios, lógica de negocio, etc.
-            // Ejemplo: evitar que el mismo usuario cree dos eventos en la misma fecha y lugar:
+            
             var conflicto = await _context.Eventos.AnyAsync(e =>
                 e.UsuarioId == eventoDto.UsuarioId &&
                 e.Fecha == eventoDto.Fecha &&
@@ -54,7 +51,7 @@ namespace TecWeb.Services
             if (!usuarioExiste)
                 return ServiceResult<EventoDto>.Failure("Usuario asignado no existe.");
 
-            // (Opcional) Evitar conflicto con otra entidad existente
+            
             var dup = await _context.Eventos.AnyAsync(e =>
                 e.EventoId != id &&
                 e.UsuarioId == eventoDto.UsuarioId &&
@@ -63,7 +60,7 @@ namespace TecWeb.Services
             if (dup)
                 return ServiceResult<EventoDto>.Failure("Existe otro evento del mismo usuario en esa fecha y lugar.");
 
-            // Mapear campos permitidos
+            
             evento.Titulo = eventoDto.Titulo;
             evento.Descripcion = eventoDto.Descripcion;
             evento.Lugar = eventoDto.Lugar;
@@ -93,12 +90,12 @@ namespace TecWeb.Services
         public async Task<ServiceResult<List<EventoDto>>> ListarEventosAsync()
         {
             var eventos = await _context.Eventos
-                .Include(e => e.Usuario) // opcional, si quieres info del usuario
+                .Include(e => e.Usuario) 
                 .ToListAsync();
 
             return ServiceResult<List<EventoDto>>.Success(_mapper.Map<List<EventoDto>>(eventos));
         }
-        //
+        
         public async Task<ServiceResult<EventoDto>> ObtenerEventoPorIdAsync(int id)
         {
             var evento = await _context.Eventos
