@@ -19,7 +19,11 @@ builder.Services.AddDbContext<GestionCulturalContext>(options =>
 
 // -------------------- AutoMapper --------------------
 // Carga los profiles desde los assemblies referenciados (incluye MappingProfile)
-builder.Services.AddAutoMapper(typeof(MappingProfile));
+builder.Services.AddAutoMapper(cfg =>
+{
+    // Aquí puedes hacer configuraciones adicionales si quieres
+}, typeof(MappingProfile));
+
 
 // -------------------- FluentValidation (API moderna) --------------------
 builder.Services.AddControllers();
