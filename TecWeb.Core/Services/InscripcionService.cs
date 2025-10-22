@@ -21,7 +21,6 @@ namespace TecWeb.Core.Services
             _mapper = mapper;
         }
 
-        // Método faltante que estaba causando CS0535
         public async Task<ServiceResult<List<InscripcionDto>>> ListarInscripcionesAsync()
         {
             var list = await _insRepo.ListarAsync();

@@ -16,7 +16,7 @@ namespace TecWeb.Controllers
             _inscripcionService = inscripcionService;
         }
 
-        // Listar todas las inscripciones o filtrar por evento: GET api/inscripcion/listar?eventoId=5
+        /
         [HttpGet("listar")]
         public async Task<IActionResult> ListarInscripciones([FromQuery] int? eventoId)
         {
@@ -26,7 +26,7 @@ namespace TecWeb.Controllers
                 return porEvento.IsSuccess ? Ok(porEvento.Data) : BadRequest(porEvento.Message);
             }
 
-            // Si el servicio tiene ListarInscripcionesAsync, se invoca; si no existe, implementar (ver abajo).
+            
             var all = await _inscripcionService.ListarInscripcionesAsync();
             return all.IsSuccess ? Ok(all.Data) : BadRequest(all.Message);
         }

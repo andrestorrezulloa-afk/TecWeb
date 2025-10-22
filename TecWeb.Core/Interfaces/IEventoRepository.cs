@@ -13,7 +13,7 @@ namespace TecWeb.Core.Interfaces
         Task ActualizarAsync(Evento evento);
         Task EliminarAsync(Evento evento);
 
-        // Métodos auxiliares usados por el servicio
+        
         Task<bool> UsuarioExisteAsync(int usuarioId);
         Task<bool> ExisteConflictoAsync(int usuarioId, DateTime fecha, string lugar, int? excludingEventoId = null);
     }

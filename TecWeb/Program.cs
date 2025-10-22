@@ -18,21 +18,20 @@ builder.Services.AddDbContext<GestionCulturalContext>(options =>
 );
 
 // -------------------- AutoMapper --------------------
-// Carga los profiles desde los assemblies referenciados (incluye MappingProfile)
+
 builder.Services.AddAutoMapper(cfg =>
 {
-    // Aquí puedes hacer configuraciones adicionales si quieres
+    
 }, typeof(MappingProfile));
 
 
 // -------------------- FluentValidation (API moderna) --------------------
 builder.Services.AddControllers();
 
-// Reemplaza la llamada obsoleta AddFluentValidation() por las nuevas APIs:
+
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddFluentValidationClientsideAdapters();
 
-// Registra validators desde el assembly donde está EventoValidator (Infrastructure)
 builder.Services.AddValidatorsFromAssemblyContaining<EventoValidator>();
 
 // -------------------- Repositorios (DI) --------------------
@@ -60,7 +59,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "TecWeb API V1");
-        c.RoutePrefix = "swagger"; // queda accesible en /swagger
+        c.RoutePrefix = "swagger"; 
     });
 }
 

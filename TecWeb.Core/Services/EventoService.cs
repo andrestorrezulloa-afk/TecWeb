@@ -23,11 +23,11 @@ namespace TecWeb.Core.Services
         {
             if (eventoDto == null) return ServiceResult<EventoDto>.Failure("Evento nulo");
 
-            // Validar usuario existente
+            
             if (!await _repo.UsuarioExisteAsync(eventoDto.UsuarioId))
                 return ServiceResult<EventoDto>.Failure("Usuario no existe");
 
-            // Validar conflicto (mismo usuario, misma fecha y lugar)
+            
             if (await _repo.ExisteConflictoAsync(eventoDto.UsuarioId, eventoDto.Fecha, eventoDto.Lugar))
                 return ServiceResult<EventoDto>.Failure("Conflicto: ya existe un evento del usuario en esa fecha/lugar");
 

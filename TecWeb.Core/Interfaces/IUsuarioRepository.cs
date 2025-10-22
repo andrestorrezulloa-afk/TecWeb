@@ -6,7 +6,7 @@ namespace TecWeb.Core.Interfaces
 {
     public interface IUsuarioRepository
     {
-        Task<List<Usuario>> ListarAsync();                 // <- NUEVO (lista todos)
+        Task<List<Usuario>> ListarAsync();                 
         Task<Usuario?> ObtenerPorIdAsync(int id);
         Task<Usuario> CrearAsync(Usuario entidad);
         Task ActualizarAsync(Usuario entidad);
