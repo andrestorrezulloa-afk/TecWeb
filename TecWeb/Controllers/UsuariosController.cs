@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using TecWeb.DTOs;
-using TecWeb.Services;
+using TecWeb.Core.DTOs;
+using TecWeb.Core.Interfaces;
+using System.Threading.Tasks;
 
 namespace TecWeb.Controllers
 {
@@ -33,7 +34,8 @@ namespace TecWeb.Controllers
         public async Task<IActionResult> CrearUsuario([FromBody] UsuarioDto usuarioDto)
         {
             var result = await _usuarioService.CrearUsuarioAsync(usuarioDto);
-            return result.IsSuccess ? Created("", result.Data) : BadRequest(result.Message);
+            if (!result.IsSuccess) return BadRequest(result.Message);
+            return CreatedAtAction(nameof(ObtenerUsuario), new { id = result.Data.UsuarioId }, result.Data);
         }
 
         [HttpPut("actualizar/{id}")]

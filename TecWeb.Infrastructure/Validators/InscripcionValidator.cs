@@ -1,9 +1,11 @@
-﻿using FluentValidation;
-using TecWeb.DTOs;
+﻿// Validators/InscripcionValidator.cs
+using System;
+using FluentValidation;
+using TecWeb.Core.DTOs;
 
-namespace TecWeb.Validators
+namespace TecWeb.Infrastructure.Validators
 {
-    public class InscripcionValidator : AbstractValidator<InscripcioneDto>
+    public class InscripcionValidator : AbstractValidator<InscripcionDto>
     {
         public InscripcionValidator()
         {
@@ -14,7 +16,7 @@ namespace TecWeb.Validators
                 .GreaterThan(0).WithMessage("EventoId inválido.");
 
             RuleFor(x => x.FechaInscripcion)
-                .Must(date => date == null || date <= DateTime.Now)
+                .Must(date => !date.HasValue || date.Value <= DateTime.Now)
                 .WithMessage("La fecha de inscripción no puede ser futura.");
         }
     }

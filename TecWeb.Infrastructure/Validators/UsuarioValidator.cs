@@ -1,7 +1,9 @@
-﻿using FluentValidation;
-using TecWeb.DTOs;
+﻿
+using System;
+using FluentValidation;
+using TecWeb.Core.DTOs;
 
-namespace TecWeb.Validators
+namespace TecWeb.Infrastructure.Validators
 {
     public class UsuarioValidator : AbstractValidator<UsuarioDto>
     {
@@ -28,9 +30,8 @@ namespace TecWeb.Validators
                 .NotEmpty().WithMessage("El rol es obligatorio.")
                 .MaximumLength(50).WithMessage("El rol no puede exceder 50 caracteres.");
 
-            // FechaRegistro, si se envía, no debe ser futura
             RuleFor(u => u.FechaRegistro)
-                .Must(date => date == null || date <= DateTime.Now)
+                .Must(date => !date.HasValue || date.Value <= DateTime.Now)
                 .WithMessage("La fecha de registro no puede ser futura.");
         }
     }

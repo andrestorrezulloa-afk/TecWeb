@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using TecWeb.DTOs;
-using TecWeb.Services;
+using TecWeb.Core.DTOs;
+using TecWeb.Core.Interfaces;
+using System.Threading.Tasks;
 
 namespace TecWeb.Controllers
 {
@@ -33,7 +34,10 @@ namespace TecWeb.Controllers
         public async Task<IActionResult> CrearEvento([FromBody] EventoDto eventoDto)
         {
             var result = await _eventoService.CrearEventoAsync(eventoDto);
-            return result.IsSuccess ? Created("", result.Data) : BadRequest(result.Message);
+            if (!result.IsSuccess) return BadRequest(result.Message);
+
+          
+            return CreatedAtAction(nameof(ObtenerEvento), new { id = result.Data.EventoId }, result.Data);
         }
 
         [HttpPut("actualizar/{id}")]

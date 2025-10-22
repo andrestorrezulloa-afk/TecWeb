@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using TecWeb.DTOs;
-using TecWeb.Services;
+using TecWeb.Core.DTOs;
+using TecWeb.Core.Interfaces;
+using System.Threading.Tasks;
 
 namespace TecWeb.Controllers
 {
@@ -15,11 +16,19 @@ namespace TecWeb.Controllers
             _inscripcionService = inscripcionService;
         }
 
+        // Listar todas las inscripciones o filtrar por evento: GET api/inscripcion/listar?eventoId=5
         [HttpGet("listar")]
-        public async Task<IActionResult> ListarInscripciones()
+        public async Task<IActionResult> ListarInscripciones([FromQuery] int? eventoId)
         {
-            var result = await _inscripcionService.ListarInscripcionesAsync();
-            return result.IsSuccess ? Ok(result.Data) : BadRequest(result.Message);
+            if (eventoId.HasValue)
+            {
+                var porEvento = await _inscripcionService.ListarInscripcionesPorEventoAsync(eventoId.Value);
+                return porEvento.IsSuccess ? Ok(porEvento.Data) : BadRequest(porEvento.Message);
+            }
+
+            // Si el servicio tiene ListarInscripcionesAsync, se invoca; si no existe, implementar (ver abajo).
+            var all = await _inscripcionService.ListarInscripcionesAsync();
+            return all.IsSuccess ? Ok(all.Data) : BadRequest(all.Message);
         }
 
         [HttpGet("buscar/{id}")]
@@ -30,14 +39,15 @@ namespace TecWeb.Controllers
         }
 
         [HttpPost("guardar")]
-        public async Task<IActionResult> CrearInscripcion([FromBody] InscripcioneDto inscripcionDto)
+        public async Task<IActionResult> CrearInscripcion([FromBody] InscripcionDto inscripcionDto)
         {
             var result = await _inscripcionService.CrearInscripcionAsync(inscripcionDto);
-            return result.IsSuccess ? Created("", result.Data) : BadRequest(result.Message);
+            if (!result.IsSuccess) return BadRequest(result.Message);
+            return CreatedAtAction(nameof(ObtenerInscripcion), new { id = result.Data.InscripcionId }, result.Data);
         }
 
         [HttpPut("actualizar/{id}")]
-        public async Task<IActionResult> ActualizarInscripcion(int id, [FromBody] InscripcioneDto inscripcionDto)
+        public async Task<IActionResult> ActualizarInscripcion(int id, [FromBody] InscripcionDto inscripcionDto)
         {
             var result = await _inscripcionService.ActualizarInscripcionAsync(id, inscripcionDto);
             return result.IsSuccess ? Ok(result.Data) : BadRequest(result.Message);

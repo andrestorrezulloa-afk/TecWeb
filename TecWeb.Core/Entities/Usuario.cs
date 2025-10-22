@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
-namespace TecWeb.Models;
+namespace TecWeb.Core.Entities;
 
 public partial class Usuario
 {

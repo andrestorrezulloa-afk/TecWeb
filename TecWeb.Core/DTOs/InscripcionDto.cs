@@ -1,8 +1,8 @@
 ﻿using System;
 
-namespace TecWeb.DTOs
+namespace TecWeb.Core.DTOs
 {
-    public class InscripcioneDto
+    public class InscripcionDto
     {
         public int InscripcionId { get; set; }
         public int UsuarioId { get; set; }

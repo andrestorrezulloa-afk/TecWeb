@@ -1,9 +1,9 @@
 ﻿// Validators/EventoValidator.cs
-using FluentValidation;
-using TecWeb.DTOs;
 using System;
+using FluentValidation;
+using TecWeb.Core.DTOs;
 
-namespace TecWeb.Validators
+namespace TecWeb.Infrastructure.Validators
 {
     public class EventoValidator : AbstractValidator<EventoDto>
     {
@@ -23,15 +23,22 @@ namespace TecWeb.Validators
             RuleFor(x => x.Fecha)
                 .Must(date => date != default(DateTime))
                     .WithMessage("Fecha inválida.")
-                .Must(date => date >= DateTime.Today)
+                .Must(date => date.Date >= DateTime.Today)
                     .WithMessage("La fecha del evento no puede ser anterior a hoy.");
 
             RuleFor(x => x.HoraInicio)
-                .NotEmpty().WithMessage("Hora de inicio requerida.");
+                .Must(h => h != default(DateTime))
+                    .WithMessage("Hora de inicio requerida.");
 
             RuleFor(x => x.HoraFin)
-                .NotEmpty().WithMessage("Hora de fin requerida.")
-                .Must((dto, horaFin) => dto.HoraInicio < horaFin)
+                .Must(h => h != default(DateTime))
+                    .WithMessage("Hora de fin requerida.")
+                .Must((dto, horaFin) =>
+                {
+                    
+                    if (dto.HoraInicio == default || horaFin == default) return false;
+                    return dto.HoraInicio.TimeOfDay < horaFin.TimeOfDay;
+                })
                 .WithMessage("HoraFin debe ser posterior a HoraInicio.");
 
             RuleFor(x => x.AforoMaximo)
