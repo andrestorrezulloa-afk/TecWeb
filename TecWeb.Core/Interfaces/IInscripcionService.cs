@@ -13,6 +13,5 @@ namespace TecWeb.Core.Interfaces
         Task<ServiceResult<InscripcionDto>> CrearInscripcionAsync(InscripcionDto dto);
         Task<ServiceResult<InscripcionDto>> ActualizarInscripcionAsync(int id, InscripcionDto dto);
         Task<ServiceResult<bool>> EliminarInscripcionAsync(int id);
-
     }
 }

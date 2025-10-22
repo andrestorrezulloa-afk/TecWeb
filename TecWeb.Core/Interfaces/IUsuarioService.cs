@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using TecWeb.Core.DTOs;
 using TecWeb.Core.Services;
 
@@ -11,6 +12,5 @@ namespace TecWeb.Core.Interfaces
         Task<ServiceResult<UsuarioDto>> CrearUsuarioAsync(UsuarioDto dto);
         Task<ServiceResult<UsuarioDto>> ActualizarUsuarioAsync(int id, UsuarioDto dto);
         Task<ServiceResult<bool>> EliminarUsuarioAsync(int id);
-
     }
 }

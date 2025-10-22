@@ -16,8 +16,13 @@ namespace TecWeb.Infrastructure.Repositories
             _context = context;
         }
 
-        public async Task<Inscripcione?> ObtenerPorIdAsync(int id)
-            => await _context.Inscripciones.FindAsync(id);
+        public async Task<List<Inscripcione>> ListarAsync()
+        {
+            return await _context.Inscripciones
+                .Include(i => i.Usuario)
+                .Include(i => i.Evento)
+                .ToListAsync();
+        }
 
         public async Task<List<Inscripcione>> ListarPorEventoAsync(int eventoId)
             => await _context.Inscripciones
@@ -25,22 +30,25 @@ namespace TecWeb.Infrastructure.Repositories
                 .Include(i => i.Usuario)
                 .ToListAsync();
 
-        public async Task<Inscripcione> CrearAsync(Inscripcione inscripcion)
+        public async Task<Inscripcione?> ObtenerPorIdAsync(int id)
+            => await _context.Inscripciones.FindAsync(id);
+
+        public async Task<Inscripcione> CrearAsync(Inscripcione entidad)
         {
-            _context.Inscripciones.Add(inscripcion);
+            _context.Inscripciones.Add(entidad);
             await _context.SaveChangesAsync();
-            return inscripcion;
+            return entidad;
         }
 
-        public async Task ActualizarAsync(Inscripcione inscripcion)
+        public async Task ActualizarAsync(Inscripcione entidad)
         {
-            _context.Inscripciones.Update(inscripcion);
+            _context.Inscripciones.Update(entidad);
             await _context.SaveChangesAsync();
         }
 
-        public async Task EliminarAsync(Inscripcione inscripcion)
+        public async Task EliminarAsync(Inscripcione entidad)
         {
-            _context.Inscripciones.Remove(inscripcion);
+            _context.Inscripciones.Remove(entidad);
             await _context.SaveChangesAsync();
         }
 

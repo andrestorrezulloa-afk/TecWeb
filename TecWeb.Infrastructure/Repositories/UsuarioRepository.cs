@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using TecWeb.Core.Entities;
 using TecWeb.Core.Interfaces;
@@ -14,25 +15,30 @@ namespace TecWeb.Infrastructure.Repositories
             _context = context;
         }
 
+        public async Task<List<Usuario>> ListarAsync()
+        {
+            return await _context.Usuarios.ToListAsync();
+        }
+
         public async Task<Usuario?> ObtenerPorIdAsync(int id)
             => await _context.Usuarios.FindAsync(id);
 
-        public async Task<Usuario> CrearAsync(Usuario usuario)
+        public async Task<Usuario> CrearAsync(Usuario entidad)
         {
-            _context.Usuarios.Add(usuario);
+            _context.Usuarios.Add(entidad);
             await _context.SaveChangesAsync();
-            return usuario;
+            return entidad;
         }
 
-        public async Task ActualizarAsync(Usuario usuario)
+        public async Task ActualizarAsync(Usuario entidad)
         {
-            _context.Usuarios.Update(usuario);
+            _context.Usuarios.Update(entidad);
             await _context.SaveChangesAsync();
         }
 
-        public async Task EliminarAsync(Usuario usuario)
+        public async Task EliminarAsync(Usuario entidad)
         {
-            _context.Usuarios.Remove(usuario);
+            _context.Usuarios.Remove(entidad);
             await _context.SaveChangesAsync();
         }
 

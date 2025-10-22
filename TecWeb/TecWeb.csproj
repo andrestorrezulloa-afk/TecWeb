@@ -7,25 +7,39 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Mantenemos AutoMapper 15 (compatible con AddAutoMapper) -->
     <PackageReference Include="AutoMapper" Version="15.0.1" />
+
+    <!-- FluentValidation -->
     <PackageReference Include="FluentValidation.AspNetCore" Version="11.3.1" />
+
+    <!-- Newtonsoft JSON -->
     <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="9.0.10" />
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.9" />
+
+    <!-- OpenAPI/Minimal APIs helper -->
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.10" />
+
+    <!-- Entity Framework Core: alineadas todas a 9.0.10 para evitar NU1605 -->
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.10" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.10" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.10">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.10" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.9">
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.10">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+
+    <!-- Code generation helper -->
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="9.0.0" />
+
+    <!-- Swagger / OpenAPI -->
     <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.6" />
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Referencias a los proyectos Core e Infrastructure -->
     <ProjectReference Include="..\TecWeb.Core\TecWeb.Core.csproj" />
     <ProjectReference Include="..\TecWeb.Infrastructure\TecWeb.Infrastructure.csproj" />
   </ItemGroup>
