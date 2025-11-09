@@ -30,13 +30,12 @@ builder.Services.AddAutoMapper(cfg =>
 // (línea solicitada por el instructivo)
 //builder.Services.AddScoped<ICorrespondenciaService, CorrespondenciaService>();
 
-// registrar controladores (parte 1 pide AddControllers aquí)
+// registrar controladores
 builder.Services.AddControllers();
 
 // -------------------- FluentValidation (API moderna) --------------------
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddFluentValidationClientsideAdapters();
-
 builder.Services.AddValidatorsFromAssemblyContaining<EventoValidator>();
 
 // -------------------- Repositorios (DI) --------------------
@@ -49,8 +48,7 @@ builder.Services.AddScoped<IEventoService, EventoService>();
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
 builder.Services.AddScoped<IInscripcionService, InscripcionService>();
 
-// -------------------- Swagger / Otros --------------------
-// Configurar Swagger (parte 1: metadata según tu instrucción)
+// -------------------- Swagger --------------------
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -67,7 +65,7 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-// Se agrega configuración adicional del MVC con filtros y Newtonsoft (no modificar)
+// -------------------- Configuración adicional del MVC --------------------
 builder.Services.AddControllers(options =>
 {
     options.Filters.Add<GlobalExceptionFilter>();
@@ -81,18 +79,49 @@ builder.Services.AddControllers(options =>
 
 // Registrar UnitOfWork, Dapper y factory
 builder.Services.AddTransient<IUnitOfWork, UnitOfWork>();
-
 builder.Services.AddSingleton<IDbConnectionFactory, DbConnectionFactory>();
 builder.Services.AddScoped<IDapperContext, DapperContext>();
 
 var app = builder.Build();
 
-// Usar Swagger (parte 2: solo UseSwagger() dentro del if de Development)
+// ===========================
+// Configuración Swagger UI
+// ===========================
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Backend Social Media API v1");
+        options.RoutePrefix = string.Empty; // Swagger será accesible en la raíz
+    });
 }
+// -------------------- Swagger --------------------
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Backend Social Media API",
+        Version = "v1",
+        Description = "Documentación de la API de Social Media - .NET 9",
+        Contact = new OpenApiContact
+        {
+            Name = "Equipo de Desarrollo UCB",
+            Email = "desarrollo@ucb.edu.bo"
+        }
+    });
 
+    // Incluir los comentarios XML generados a partir de tus DTOs y controladores
+    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    options.IncludeXmlComments(xmlPath);
+});
+
+
+// ===========================
+// Middlewares habituales
+// ===========================
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();

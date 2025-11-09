@@ -9,16 +9,27 @@ using TecWeb.Core.QueryFilters;
 
 namespace TecWeb.Core.Services
 {
+    /// <summary>
+    /// Servicio que maneja la lógica de negocio para las inscripciones a eventos.
+    /// </summary>
     public class InscripcionService : IInscripcionService
     {
         private readonly IUnitOfWork _unitOfWork;
 
+        /// <summary>
+        /// Constructor del servicio de inscripciones.
+        /// </summary>
+        /// <param name="unitOfWork">Unidad de trabajo para acceder a los repositorios.</param>
         public InscripcionService(IUnitOfWork unitOfWork)
         {
             _unitOfWork = unitOfWork;
         }
 
-        // Listar con filtros y paginación -> devuelve PagedList dentro de ServiceResult
+        /// <summary>
+        /// Lista inscripciones con filtros y paginación opcionales.
+        /// </summary>
+        /// <param name="filters">Filtros de búsqueda y paginación.</param>
+        /// <returns>Lista paginada de inscripciones dentro de un ServiceResult.</returns>
         public async Task<ServiceResult<PagedList<Inscripcione>>> ListarInscripcionesAsync(InscripcionQueryFilter filters = null)
         {
             var list = await _unitOfWork.InscripcionRepository.ListarAsync();
@@ -48,12 +59,22 @@ namespace TecWeb.Core.Services
             return ServiceResult<PagedList<Inscripcione>>.Success(pagedInscripciones);
         }
 
+        /// <summary>
+        /// Lista inscripciones de un evento específico.
+        /// </summary>
+        /// <param name="eventoId">Id del evento.</param>
+        /// <returns>Lista de inscripciones del evento.</returns>
         public async Task<ServiceResult<List<Inscripcione>>> ListarInscripcionesPorEventoAsync(int eventoId)
         {
             var list = await _unitOfWork.InscripcionRepository.ListarPorEventoAsync(eventoId);
             return ServiceResult<List<Inscripcione>>.Success(list);
         }
 
+        /// <summary>
+        /// Obtiene una inscripción por su Id.
+        /// </summary>
+        /// <param name="id">Id de la inscripción.</param>
+        /// <returns>Inscripción encontrada o lanza excepción si no existe.</returns>
         public async Task<ServiceResult<Inscripcione>> ObtenerInscripcionPorIdAsync(int id)
         {
             var ins = await _unitOfWork.InscripcionRepository.ObtenerPorIdAsync(id);
@@ -63,6 +84,11 @@ namespace TecWeb.Core.Services
             return ServiceResult<Inscripcione>.Success(ins);
         }
 
+        /// <summary>
+        /// Crea una nueva inscripción.
+        /// </summary>
+        /// <param name="inscripcion">Entidad de la inscripción a crear.</param>
+        /// <returns>Inscripción creada o lanza excepción si hay errores.</returns>
         public async Task<ServiceResult<Inscripcione>> CrearInscripcionAsync(Inscripcione inscripcion)
         {
             if (inscripcion == null)
@@ -85,6 +111,12 @@ namespace TecWeb.Core.Services
             return ServiceResult<Inscripcione>.Success(inscripcion, "Inscripción creada exitosamente");
         }
 
+        /// <summary>
+        /// Actualiza una inscripción existente.
+        /// </summary>
+        /// <param name="id">Id de la inscripción a actualizar.</param>
+        /// <param name="inscripcion">Datos actualizados de la inscripción.</param>
+        /// <returns>Inscripción actualizada o lanza excepción si no existe.</returns>
         public async Task<ServiceResult<Inscripcione>> ActualizarInscripcionAsync(int id, Inscripcione inscripcion)
         {
             var ins = await _unitOfWork.InscripcionRepository.ObtenerPorIdAsync(id);
@@ -102,6 +134,11 @@ namespace TecWeb.Core.Services
             return ServiceResult<Inscripcione>.Success(ins, "Inscripción actualizada correctamente");
         }
 
+        /// <summary>
+        /// Elimina una inscripción por su Id.
+        /// </summary>
+        /// <param name="id">Id de la inscripción a eliminar.</param>
+        /// <returns>Resultado indicando éxito o lanza excepción si no existe.</returns>
         public async Task<ServiceResult<bool>> EliminarInscripcionAsync(int id)
         {
             var ins = await _unitOfWork.InscripcionRepository.ObtenerPorIdAsync(id);
