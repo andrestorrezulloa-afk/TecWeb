@@ -1,7 +1,7 @@
 ﻿// Validators/InscripcionValidator.cs
 using System;
 using FluentValidation;
-using TecWeb.Core.DTOs;
+using TecWeb.Infrastructure.DTOs;
 
 namespace TecWeb.Infrastructure.Validators
 {

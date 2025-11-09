@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace TecWeb.Core.DTOs
+namespace TecWeb.Infrastructure.DTOs
 {
     public class EventoDto
     {

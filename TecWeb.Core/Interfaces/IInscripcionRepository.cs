@@ -6,12 +6,12 @@ namespace TecWeb.Core.Interfaces
 {
     public interface IInscripcionRepository
     {
-        Task<List<Inscripcione>> ListarAsync();          
+        Task<List<Inscripcione>> ListarAsync();
         Task<List<Inscripcione>> ListarPorEventoAsync(int eventoId);
         Task<Inscripcione?> ObtenerPorIdAsync(int id);
-        Task<Inscripcione> CrearAsync(Inscripcione entidad);
-        Task ActualizarAsync(Inscripcione entidad);
-        Task EliminarAsync(Inscripcione entidad);
+        Task CrearAsync(Inscripcione entidad);
+        void Actualizar(Inscripcione entidad);
+        void Eliminar(Inscripcione entidad);
         Task<bool> UsuarioInscriptoEnEventoAsync(int usuarioId, int eventoId);
     }
 }

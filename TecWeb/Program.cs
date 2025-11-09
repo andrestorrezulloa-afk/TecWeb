@@ -6,9 +6,10 @@ using Microsoft.OpenApi.Models;
 using TecWeb.Core.Interfaces;
 using TecWeb.Core.Services;
 using TecWeb.Infrastructure.Data;
+using TecWeb.Infrastructure.Filters;
+using TecWeb.Infrastructure.Mappings;
 using TecWeb.Infrastructure.Repositories;
 using TecWeb.Infrastructure.Validators;
-using TecWeb.Mappings;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -47,9 +48,28 @@ builder.Services.AddScoped<IInscripcionService, InscripcionService>();
 // -------------------- Swagger / Otros --------------------
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
+
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "TecWeb API", Version = "v1" });
 });
+builder.Services.AddControllers(options =>
+{
+    options.Filters.Add<GlobalExceptionFilter>();
+}).AddNewtonsoftJson(options =>
+{
+    options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
+}).ConfigureApiBehaviorOptions(options =>
+{
+    options.SuppressModelStateInvalidFilter = true;
+});
+
+
+builder.Services.AddTransient<IUnitOfWork, UnitOfWork>();
+
+// Registrar IDbConnectionFactory, UnitOfWork, DapperContext y repos
+builder.Services.AddSingleton<IDbConnectionFactory, DbConnectionFactory>();
+builder.Services.AddScoped<IDapperContext, DapperContext>();
+
 
 var app = builder.Build();
 

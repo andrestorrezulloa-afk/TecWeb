@@ -36,21 +36,19 @@ namespace TecWeb.Infrastructure.Repositories
 
         public async Task<Evento> CrearAsync(Evento evento)
         {
-            _context.Eventos.Add(evento);
-            await _context.SaveChangesAsync();
+            await _context.Eventos.AddAsync(evento);
+            // No guardar cambios aquí: UnitOfWork lo hará
             return evento;
         }
 
-        public async Task ActualizarAsync(Evento evento)
+        public void Actualizar(Evento evento)
         {
             _context.Eventos.Update(evento);
-            await _context.SaveChangesAsync();
         }
 
-        public async Task EliminarAsync(Evento evento)
+        public void Eliminar(Evento evento)
         {
             _context.Eventos.Remove(evento);
-            await _context.SaveChangesAsync();
         }
 
         public async Task<bool> UsuarioExisteAsync(int usuarioId)
@@ -60,11 +58,14 @@ namespace TecWeb.Infrastructure.Repositories
 
         public async Task<bool> ExisteConflictoAsync(int usuarioId, DateTime fecha, string lugar, int? excludingEventoId = null)
         {
-            var q = _context.Eventos.AsQueryable();
+            var query = _context.Eventos.AsQueryable();
             if (excludingEventoId.HasValue)
-                q = q.Where(e => e.EventoId != excludingEventoId.Value);
+                query = query.Where(e => e.EventoId != excludingEventoId.Value);
 
-            return await q.AnyAsync(e => e.UsuarioId == usuarioId && e.Fecha == fecha && e.Lugar == lugar);
+            return await query.AnyAsync(e =>
+                e.UsuarioId == usuarioId &&
+                e.Fecha == fecha &&
+                e.Lugar == lugar);
         }
     }
 }

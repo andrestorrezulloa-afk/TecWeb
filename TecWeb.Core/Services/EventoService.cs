@@ -1,75 +1,111 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
-using AutoMapper;
-using TecWeb.Core.DTOs;
 using TecWeb.Core.Entities;
+using TecWeb.Core.Exceptions;
 using TecWeb.Core.Interfaces;
+using TecWeb.Core.QueryFilters;
+using TecWeb.Core.CustomEntities; // <- Para PagedList
 
 namespace TecWeb.Core.Services
 {
     public class EventoService : IEventoService
     {
-        private readonly IEventoRepository _repo;
-        private readonly IMapper _mapper;
+        private readonly IUnitOfWork _unitOfWork;
 
-        public EventoService(IEventoRepository repo, IMapper mapper)
+        public EventoService(IUnitOfWork unitOfWork)
         {
-            _repo = repo;
-            _mapper = mapper;
+            _unitOfWork = unitOfWork;
         }
 
-        public async Task<ServiceResult<EventoDto>> CrearEventoAsync(EventoDto eventoDto)
+        public async Task<ServiceResult<Evento>> CrearEventoAsync(Evento evento)
         {
-            if (eventoDto == null) return ServiceResult<EventoDto>.Failure("Evento nulo");
+            if (evento == null)
+                return ServiceResult<Evento>.Failure("Evento nulo");
 
-            
-            if (!await _repo.UsuarioExisteAsync(eventoDto.UsuarioId))
-                return ServiceResult<EventoDto>.Failure("Usuario no existe");
+            var usuarioExiste = await _unitOfWork.UsuarioRepository.ExistePorIdAsync(evento.UsuarioId);
+            if (!usuarioExiste)
+                return ServiceResult<Evento>.Failure("Usuario no existe");
 
-            
-            if (await _repo.ExisteConflictoAsync(eventoDto.UsuarioId, eventoDto.Fecha, eventoDto.Lugar))
-                return ServiceResult<EventoDto>.Failure("Conflicto: ya existe un evento del usuario en esa fecha/lugar");
+            var existeConflicto = await _unitOfWork.EventoRepository.ExisteConflictoAsync(
+                evento.UsuarioId, evento.Fecha, evento.Lugar);
+            if (existeConflicto)
+                return ServiceResult<Evento>.Failure("Conflicto: ya existe un evento del usuario en esa fecha/lugar");
 
-            var entidad = _mapper.Map<Evento>(eventoDto);
-            var creado = await _repo.CrearAsync(entidad);
+            await _unitOfWork.EventoRepository.CrearAsync(evento);
+            await _unitOfWork.SaveChangesAsync();
 
-            return ServiceResult<EventoDto>.Success(_mapper.Map<EventoDto>(creado), "Evento creado");
+            return ServiceResult<Evento>.Success(evento, "Evento creado");
         }
 
         public async Task<ServiceResult<bool>> EliminarEventoAsync(int id)
         {
-            var e = await _repo.ObtenerPorIdAsync(id);
-            if (e == null) return ServiceResult<bool>.Failure("Evento no encontrado");
+            var evento = await _unitOfWork.EventoRepository.ObtenerPorIdAsync(id);
+            if (evento == null)
+                return ServiceResult<bool>.Failure("Evento no encontrado");
 
-            await _repo.EliminarAsync(e);
+            _unitOfWork.EventoRepository.Eliminar(evento);
+            await _unitOfWork.SaveChangesAsync();
+
             return ServiceResult<bool>.Success(true, "Evento eliminado");
         }
 
-        public async Task<ServiceResult<EventoDto>> ObtenerEventoPorIdAsync(int id)
+        public async Task<ServiceResult<Evento>> ObtenerEventoPorIdAsync(int id)
         {
-            var e = await _repo.ObtenerPorIdAsync(id);
-            if (e == null) return ServiceResult<EventoDto>.Failure("Evento no encontrado");
+            var evento = await _unitOfWork.EventoRepository.ObtenerPorIdAsync(id);
+            if (evento == null)
+                throw new BusinessException("El usuario no existe");
 
-            return ServiceResult<EventoDto>.Success(_mapper.Map<EventoDto>(e));
+            return ServiceResult<Evento>.Success(evento);
         }
 
-        public async Task<ServiceResult<List<EventoDto>>> ListarEventosAsync()
+        public async Task<ServiceResult<List<Evento>>> ListarEventosAsync()
         {
-            var list = await _repo.ListarAsync();
-            return ServiceResult<List<EventoDto>>.Success(_mapper.Map<List<EventoDto>>(list));
+            var list = await _unitOfWork.EventoRepository.ListarAsync();
+            return ServiceResult<List<Evento>>.Success(list);
         }
 
-        public async Task<ServiceResult<EventoDto>> ActualizarEventoAsync(int id, EventoDto eventoDto)
+        public async Task<ServiceResult<Evento>> ActualizarEventoAsync(int id, Evento evento)
         {
-            var e = await _repo.ObtenerPorIdAsync(id);
-            if (e == null) return ServiceResult<EventoDto>.Failure("Evento no encontrado");
+            var e = await _unitOfWork.EventoRepository.ObtenerPorIdAsync(id);
+            if (e == null)
+                return ServiceResult<Evento>.Failure("Evento no encontrado");
 
-            // Mapear los cambios desde el DTO a la entidad existente
-            _mapper.Map(eventoDto, e);
-            await _repo.ActualizarAsync(e);
+            e.Titulo = evento.Titulo;
+            e.Descripcion = evento.Descripcion;
+            e.Lugar = evento.Lugar;
+            e.Fecha = evento.Fecha;
+            e.HoraInicio = evento.HoraInicio;
+            e.HoraFin = evento.HoraFin;
+            e.AforoMaximo = evento.AforoMaximo;
+            e.UsuarioId = evento.UsuarioId;
 
-            return ServiceResult<EventoDto>.Success(_mapper.Map<EventoDto>(e), "Evento actualizado");
+            _unitOfWork.EventoRepository.Actualizar(e);
+            await _unitOfWork.SaveChangesAsync();
+
+            return ServiceResult<Evento>.Success(e, "Evento actualizado");
+        }
+
+        // === FILTRADO Y PAGINACIÓN ===
+        public async Task<ServiceResult<PagedList<Evento>>> ListarEventosFiltradosAsync(EventoQueryFilter filters)
+        {
+            var eventos = await _unitOfWork.EventoRepository.ListarAsync();
+            var query = eventos.AsQueryable();
+
+            if (filters.UsuarioId != null)
+                query = query.Where(e => e.UsuarioId == filters.UsuarioId);
+
+            if (filters.Fecha != null)
+                query = query.Where(e => e.Fecha.Date == filters.Fecha.Value.Date);
+
+            if (!string.IsNullOrEmpty(filters.Lugar))
+                query = query.Where(e => e.Lugar.ToLower().Contains(filters.Lugar.ToLower()));
+
+            // Aplicar paginación usando tu PagedList
+            var pagedEventos = PagedList<Evento>.Create(query, filters.PageNumber, filters.PageSize);
+
+            return ServiceResult<PagedList<Evento>>.Success(pagedEventos);
         }
     }
 }

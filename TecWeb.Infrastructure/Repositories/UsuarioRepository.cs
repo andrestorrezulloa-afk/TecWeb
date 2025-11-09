@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using TecWeb.Core.Entities;
@@ -10,42 +12,54 @@ namespace TecWeb.Infrastructure.Repositories
     public class UsuarioRepository : IUsuarioRepository
     {
         private readonly GestionCulturalContext _context;
+
         public UsuarioRepository(GestionCulturalContext context)
         {
             _context = context;
         }
 
-        public async Task<List<Usuario>> ListarAsync()
+        public IEnumerable<Usuario> GetAll()
         {
-            return await _context.Usuarios.ToListAsync();
+            return _context.Set<Usuario>().AsEnumerable();
         }
 
-        public async Task<Usuario?> ObtenerPorIdAsync(int id)
-            => await _context.Usuarios.FindAsync(id);
-
-        public async Task<Usuario> CrearAsync(Usuario entidad)
+        public async Task<Usuario?> GetById(int id)
         {
-            _context.Usuarios.Add(entidad);
-            await _context.SaveChangesAsync();
-            return entidad;
+            return await _context.Set<Usuario>().FindAsync(id);
         }
 
-        public async Task ActualizarAsync(Usuario entidad)
+        public async Task Add(Usuario entidad)
         {
-            _context.Usuarios.Update(entidad);
-            await _context.SaveChangesAsync();
+            await _context.Set<Usuario>().AddAsync(entidad);
+            // NO guardar cambios aquí: UnitOfWork lo hará
         }
 
-        public async Task EliminarAsync(Usuario entidad)
+        public void Update(Usuario entidad)
         {
-            _context.Usuarios.Remove(entidad);
-            await _context.SaveChangesAsync();
+            _context.Set<Usuario>().Update(entidad);
+        }
+
+        public void Delete(Usuario entidad)
+        {
+            _context.Set<Usuario>().Remove(entidad);
         }
 
         public async Task<bool> ExistePorIdAsync(int id)
-            => await _context.Usuarios.AnyAsync(u => u.UsuarioId == id);
+        {
+            return await _context.Set<Usuario>().AnyAsync(u => u.UsuarioId == id);
+        }
 
         public async Task<bool> CorreoExisteAsync(string correo)
-            => await _context.Usuarios.AnyAsync(u => u.Correo == correo);
+        {
+            return await _context.Set<Usuario>().AnyAsync(u => u.Correo == correo);
+        }
+
+        // Ejemplo de método adicional específico de negocio
+        public async Task<IEnumerable<Usuario>> BuscarPorNombreAsync(string nombre)
+        {
+            return await _context.Set<Usuario>()
+                .Where(u => u.Nombre.Contains(nombre))
+                .ToListAsync();
+        }
     }
 }

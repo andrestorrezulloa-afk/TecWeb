@@ -1,62 +1,78 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-using AutoMapper;
-using TecWeb.Core.DTOs;
 using TecWeb.Core.Entities;
+using TecWeb.Core.Exceptions;
 using TecWeb.Core.Interfaces;
-using TecWeb.Core.Services;
 
 namespace TecWeb.Core.Services
 {
     public class UsuarioService : IUsuarioService
     {
-        private readonly IUsuarioRepository _repo;
-        private readonly IMapper _mapper;
+        private readonly IUnitOfWork _unitOfWork;
 
-        public UsuarioService(IUsuarioRepository repo, IMapper mapper)
+        public UsuarioService(IUnitOfWork unitOfWork)
         {
-            _repo = repo;
-            _mapper = mapper;
+            _unitOfWork = unitOfWork;
         }
 
-        public async Task<ServiceResult<List<UsuarioDto>>> ListarUsuariosAsync()
+        public async Task<ServiceResult<List<Usuario>>> ListarUsuariosAsync()
         {
-            var usuarios = await _repo.ListarAsync();
-            return ServiceResult<List<UsuarioDto>>.Success(_mapper.Map<List<UsuarioDto>>(usuarios));
+            var usuarios = _unitOfWork.UsuarioRepository.GetAll();
+            return ServiceResult<List<Usuario>>.Success(new List<Usuario>(usuarios));
         }
 
-        public async Task<ServiceResult<UsuarioDto>> ObtenerUsuarioPorIdAsync(int id)
+        public async Task<ServiceResult<Usuario>> ObtenerUsuarioPorIdAsync(int id)
         {
-            var u = await _repo.ObtenerPorIdAsync(id);
-            if (u == null) return ServiceResult<UsuarioDto>.Failure("Usuario no encontrado");
-            return ServiceResult<UsuarioDto>.Success(_mapper.Map<UsuarioDto>(u));
+            var u = await _unitOfWork.UsuarioRepository.GetById(id);
+            if (u == null)
+                return ServiceResult<Usuario>.Failure("Usuario no encontrado");
+
+            return ServiceResult<Usuario>.Success(u);
         }
 
-        public async Task<ServiceResult<UsuarioDto>> CrearUsuarioAsync(UsuarioDto dto)
+        public async Task<ServiceResult<Usuario>> CrearUsuarioAsync(Usuario usuario)
         {
-            if (dto == null) return ServiceResult<UsuarioDto>.Failure("Usuario nulo");
-            if (await _repo.CorreoExisteAsync(dto.Correo)) return ServiceResult<UsuarioDto>.Failure("Correo ya registrado");
+            if (usuario == null)
+                return ServiceResult<Usuario>.Failure("Usuario nulo");
 
-            var entidad = _mapper.Map<Usuario>(dto);
-            var creado = await _repo.CrearAsync(entidad);
-            return ServiceResult<UsuarioDto>.Success(_mapper.Map<UsuarioDto>(creado), "Usuario creado");
+            if (await _unitOfWork.UsuarioRepository.CorreoExisteAsync(usuario.Correo))
+                return ServiceResult<Usuario>.Failure("Correo ya registrado");
+
+            await _unitOfWork.UsuarioRepository.Add(usuario);
+            await _unitOfWork.SaveChangesAsync();
+
+            return ServiceResult<Usuario>.Success(usuario, "Usuario creado");
         }
 
-        public async Task<ServiceResult<UsuarioDto>> ActualizarUsuarioAsync(int id, UsuarioDto dto)
+        public async Task<ServiceResult<Usuario>> ActualizarUsuarioAsync(int id, Usuario usuario)
         {
-            var u = await _repo.ObtenerPorIdAsync(id);
-            if (u == null) return ServiceResult<UsuarioDto>.Failure("Usuario no encontrado");
+            var u = await _unitOfWork.UsuarioRepository.GetById(id);
+            if (u == null)
+                return ServiceResult<Usuario>.Failure("Usuario no encontrado");
 
-            _mapper.Map(dto, u);
-            await _repo.ActualizarAsync(u);
-            return ServiceResult<UsuarioDto>.Success(_mapper.Map<UsuarioDto>(u), "Usuario actualizado");
+            // Actualizar propiedades
+            u.Nombre = usuario.Nombre;
+            u.Apellido = usuario.Apellido;
+            u.Correo = usuario.Correo;
+            u.Telefono = usuario.Telefono;
+            u.Rol = usuario.Rol;
+            u.FechaRegistro = usuario.FechaRegistro;
+
+            _unitOfWork.UsuarioRepository.Update(u);
+            await _unitOfWork.SaveChangesAsync();
+
+            return ServiceResult<Usuario>.Success(u, "Usuario actualizado");
         }
 
         public async Task<ServiceResult<bool>> EliminarUsuarioAsync(int id)
         {
-            var u = await _repo.ObtenerPorIdAsync(id);
-            if (u == null) return ServiceResult<bool>.Failure("Usuario no encontrado");
-            await _repo.EliminarAsync(u);
+            var u = await _unitOfWork.UsuarioRepository.GetById(id);
+            if (u == null)
+                return ServiceResult<bool>.Failure("Usuario no encontrado");
+
+            _unitOfWork.UsuarioRepository.Delete(u);
+            await _unitOfWork.SaveChangesAsync();
+
             return ServiceResult<bool>.Success(true, "Usuario eliminado");
         }
     }

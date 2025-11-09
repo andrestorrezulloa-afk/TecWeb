@@ -1,7 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using TecWeb.Core.DTOs;
-using TecWeb.Core.Interfaces;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using TecWeb.Core.Entities;
+using TecWeb.Core.Interfaces;
+using TecWeb.Core.QueryFilters;
+using TecWeb.Infrastructure.DTOs;
 
 namespace TecWeb.Controllers
 {
@@ -10,41 +14,57 @@ namespace TecWeb.Controllers
     public class EventoController : ControllerBase
     {
         private readonly IEventoService _eventoService;
+        private readonly IMapper _mapper;
 
-        public EventoController(IEventoService eventoService)
+        public EventoController(IEventoService eventoService, IMapper mapper)
         {
             _eventoService = eventoService;
+            _mapper = mapper;
         }
 
         [HttpGet("listar")]
         public async Task<IActionResult> ListarEventos()
         {
             var result = await _eventoService.ListarEventosAsync();
-            return result.IsSuccess ? Ok(result.Data) : BadRequest(result.Message);
+            if (!result.IsSuccess) return BadRequest(result.Message);
+
+            var eventosDto = _mapper.Map<IEnumerable<EventoDto>>(result.Data);
+            return Ok(eventosDto);
         }
 
         [HttpGet("buscar/{id}")]
         public async Task<IActionResult> ObtenerEvento(int id)
         {
             var result = await _eventoService.ObtenerEventoPorIdAsync(id);
-            return result.IsSuccess ? Ok(result.Data) : NotFound(result.Message);
+            if (!result.IsSuccess) return NotFound(result.Message);
+
+            var eventoDto = _mapper.Map<EventoDto>(result.Data);
+            return Ok(eventoDto);
         }
 
         [HttpPost("guardar")]
         public async Task<IActionResult> CrearEvento([FromBody] EventoDto eventoDto)
         {
-            var result = await _eventoService.CrearEventoAsync(eventoDto);
+            // DTO → Entidad
+            var evento = _mapper.Map<Evento>(eventoDto);
+
+            var result = await _eventoService.CrearEventoAsync(evento);
             if (!result.IsSuccess) return BadRequest(result.Message);
 
-          
-            return CreatedAtAction(nameof(ObtenerEvento), new { id = result.Data.EventoId }, result.Data);
+            // Entidad → DTO
+            var createdDto = _mapper.Map<EventoDto>(result.Data);
+            return CreatedAtAction(nameof(ObtenerEvento), new { id = createdDto.EventoId }, createdDto);
         }
 
         [HttpPut("actualizar/{id}")]
         public async Task<IActionResult> ActualizarEvento(int id, [FromBody] EventoDto eventoDto)
         {
-            var result = await _eventoService.ActualizarEventoAsync(id, eventoDto);
-            return result.IsSuccess ? Ok(result.Data) : BadRequest(result.Message);
+            var evento = _mapper.Map<Evento>(eventoDto);
+            var result = await _eventoService.ActualizarEventoAsync(id, evento);
+            if (!result.IsSuccess) return BadRequest(result.Message);
+
+            var updatedDto = _mapper.Map<EventoDto>(result.Data);
+            return Ok(updatedDto);
         }
 
         [HttpDelete("eliminar/{id}")]
@@ -53,5 +73,16 @@ namespace TecWeb.Controllers
             var result = await _eventoService.EliminarEventoAsync(id);
             return result.IsSuccess ? NoContent() : BadRequest(result.Message);
         }
+
+        [HttpGet("filtrar")]
+        public async Task<IActionResult> ListarEventosFiltrados([FromQuery] EventoQueryFilter filters)
+        {
+            var result = await _eventoService.ListarEventosFiltradosAsync(filters);
+            if (!result.IsSuccess) return BadRequest(result.Message);
+
+            var eventosDto = _mapper.Map<IEnumerable<EventoDto>>(result.Data);
+            return Ok(eventosDto);
+        }
+
     }
 }

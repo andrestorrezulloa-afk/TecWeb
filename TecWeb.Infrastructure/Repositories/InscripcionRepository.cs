@@ -11,6 +11,7 @@ namespace TecWeb.Infrastructure.Repositories
     public class InscripcionRepository : IInscripcionRepository
     {
         private readonly GestionCulturalContext _context;
+
         public InscripcionRepository(GestionCulturalContext context)
         {
             _context = context;
@@ -25,34 +26,42 @@ namespace TecWeb.Infrastructure.Repositories
         }
 
         public async Task<List<Inscripcione>> ListarPorEventoAsync(int eventoId)
-            => await _context.Inscripciones
+        {
+            return await _context.Inscripciones
                 .Where(i => i.EventoId == eventoId)
                 .Include(i => i.Usuario)
+                .Include(i => i.Evento)
                 .ToListAsync();
+        }
 
         public async Task<Inscripcione?> ObtenerPorIdAsync(int id)
-            => await _context.Inscripciones.FindAsync(id);
-
-        public async Task<Inscripcione> CrearAsync(Inscripcione entidad)
         {
-            _context.Inscripciones.Add(entidad);
-            await _context.SaveChangesAsync();
-            return entidad;
+            return await _context.Inscripciones
+                .Include(i => i.Usuario)
+                .Include(i => i.Evento)
+                .FirstOrDefaultAsync(i => i.InscripcionId == id);
         }
 
-        public async Task ActualizarAsync(Inscripcione entidad)
+        public async Task CrearAsync(Inscripcione entidad)
+        {
+            await _context.Inscripciones.AddAsync(entidad);
+            // No guardar cambios aquí: lo hace UnitOfWork
+        }
+
+        public void Actualizar(Inscripcione entidad)
         {
             _context.Inscripciones.Update(entidad);
-            await _context.SaveChangesAsync();
         }
 
-        public async Task EliminarAsync(Inscripcione entidad)
+        public void Eliminar(Inscripcione entidad)
         {
             _context.Inscripciones.Remove(entidad);
-            await _context.SaveChangesAsync();
         }
 
         public async Task<bool> UsuarioInscriptoEnEventoAsync(int usuarioId, int eventoId)
-            => await _context.Inscripciones.AnyAsync(i => i.UsuarioId == usuarioId && i.EventoId == eventoId);
+        {
+            return await _context.Inscripciones
+                .AnyAsync(i => i.UsuarioId == usuarioId && i.EventoId == eventoId);
+        }
     }
 }
