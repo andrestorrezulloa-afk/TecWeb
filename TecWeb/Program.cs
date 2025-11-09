@@ -19,17 +19,21 @@ builder.Services.AddDbContext<GestionCulturalContext>(options =>
 );
 
 // -------------------- AutoMapper --------------------
-
 builder.Services.AddAutoMapper(cfg =>
 {
-    
+
 }, typeof(MappingProfile));
 
+// ====================
+// Registrar Servicios
+// ====================
+// (línea solicitada por el instructivo)
+//builder.Services.AddScoped<ICorrespondenciaService, CorrespondenciaService>();
 
-// -------------------- FluentValidation (API moderna) --------------------
+// registrar controladores (parte 1 pide AddControllers aquí)
 builder.Services.AddControllers();
 
-
+// -------------------- FluentValidation (API moderna) --------------------
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddFluentValidationClientsideAdapters();
 
@@ -46,12 +50,24 @@ builder.Services.AddScoped<IUsuarioService, UsuarioService>();
 builder.Services.AddScoped<IInscripcionService, InscripcionService>();
 
 // -------------------- Swagger / Otros --------------------
+// Configurar Swagger (parte 1: metadata según tu instrucción)
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
-
+builder.Services.AddSwaggerGen(options =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "TecWeb API", Version = "v1" });
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Backend Social Media API",
+        Version = "v1",
+        Description = "Documentación de la API de Social Media - .NET 9",
+        Contact = new OpenApiContact
+        {
+            Name = "Equipo de Desarrollo UCB",
+            Email = "desarrollo@ucb.edu.bo"
+        }
+    });
 });
+
+// Se agrega configuración adicional del MVC con filtros y Newtonsoft (no modificar)
 builder.Services.AddControllers(options =>
 {
     options.Filters.Add<GlobalExceptionFilter>();
@@ -63,24 +79,18 @@ builder.Services.AddControllers(options =>
     options.SuppressModelStateInvalidFilter = true;
 });
 
-
+// Registrar UnitOfWork, Dapper y factory
 builder.Services.AddTransient<IUnitOfWork, UnitOfWork>();
 
-// Registrar IDbConnectionFactory, UnitOfWork, DapperContext y repos
 builder.Services.AddSingleton<IDbConnectionFactory, DbConnectionFactory>();
 builder.Services.AddScoped<IDapperContext, DapperContext>();
 
-
 var app = builder.Build();
 
+// Usar Swagger (parte 2: solo UseSwagger() dentro del if de Development)
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "TecWeb API V1");
-        c.RoutePrefix = "swagger"; 
-    });
 }
 
 app.UseHttpsRedirection();

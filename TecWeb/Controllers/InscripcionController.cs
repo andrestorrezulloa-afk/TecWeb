@@ -1,119 +1,123 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using TecWeb.Core.CustomEntities;       // PagedList, Pagination
 using TecWeb.Core.Entities;
-using TecWeb.Core.Exceptions;
 using TecWeb.Core.Interfaces;
 using TecWeb.Core.QueryFilters;
-using TecWeb.Core.CustomEntities; // <- Para PagedList
+using TecWeb.Infrastructure.DTOs;
+using Amazon.api.Responses;             // tu ApiResponse<T>
 
-namespace TecWeb.Core.Services
+namespace TecWeb.Controllers
 {
-    public class InscripcionService : IInscripcionService
+    [Route("api/[controller]")]
+    [ApiController]
+    public class InscripcionController : ControllerBase
     {
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IInscripcionService _inscripcionService;
+        private readonly IMapper _mapper;
 
-        public InscripcionService(IUnitOfWork unitOfWork)
+        public InscripcionController(IInscripcionService inscripcionService, IMapper mapper)
         {
-            _unitOfWork = unitOfWork;
+            _inscripcionService = inscripcionService;
+            _mapper = mapper;
         }
 
-        // Método con filtros y paginación
-        public async Task<ServiceResult<PagedList<Inscripcione>>> ListarInscripcionesAsync(InscripcionQueryFilter filters = null)
+        [HttpGet("listar")]
+        public async Task<IActionResult> ListarInscripciones()
         {
-            var list = await _unitOfWork.InscripcionRepository.ListarAsync();
-            var query = list.AsQueryable();
+            // Llama al service sin filtros -> por defecto paginado (si tu service soporta null)
+            var result = await _inscripcionService.ListarInscripcionesAsync(null);
+            if (!result.IsSuccess) return BadRequest(result.Message);
 
-            if (filters != null)
+            var paged = result.Data; // PagedList<Inscripcione>
+            var dtos = _mapper.Map<IEnumerable<InscripcionDto>>(paged);
+
+            var pagination = new Pagination
             {
-                if (filters.UsuarioId.HasValue)
-                    query = query.Where(i => i.UsuarioId == filters.UsuarioId.Value);
+                TotalCount = paged.TotalCount,
+                PageSize = paged.PageSize,
+                CurrentPage = paged.CurrentPage,
+                TotalPages = paged.TotalPages,
+                HasNextPage = paged.HasNextPage,
+                HasPreviousPage = paged.HasPreviousPage
+            };
 
-                if (filters.EventoId.HasValue)
-                    query = query.Where(i => i.EventoId == filters.EventoId.Value);
+            var response = new ApiResponse<IEnumerable<InscripcionDto>>(dtos)
+            {
+                Pagination = pagination
+            };
 
-                if (filters.FechaInscripcion.HasValue)
-                    query = query.Where(i => i.FechaInscripcion.HasValue &&
-                                             i.FechaInscripcion.Value.Date == filters.FechaInscripcion.Value.Date);
-
-                if (filters.Asistencia.HasValue)
-                    query = query.Where(i => i.Asistencia == filters.Asistencia.Value);
-            }
-
-            // Aplicar paginación
-            var pagedInscripciones = PagedList<Inscripcione>.Create(
-                query,
-                filters?.PageNumber ?? 1,
-                filters?.PageSize ?? 10
-            );
-
-            return ServiceResult<PagedList<Inscripcione>>.Success(pagedInscripciones);
+            return Ok(response);
         }
 
-        public async Task<ServiceResult<List<Inscripcione>>> ListarInscripcionesPorEventoAsync(int eventoId)
+        [HttpGet("buscar/{id}")]
+        public async Task<IActionResult> ObtenerInscripcion(int id)
         {
-            var list = await _unitOfWork.InscripcionRepository.ListarPorEventoAsync(eventoId);
-            return ServiceResult<List<Inscripcione>>.Success(list);
+            var result = await _inscripcionService.ObtenerInscripcionPorIdAsync(id);
+            if (!result.IsSuccess) return NotFound(result.Message);
+
+            var dto = _mapper.Map<InscripcionDto>(result.Data);
+            return Ok(dto);
         }
 
-        public async Task<ServiceResult<Inscripcione>> ObtenerInscripcionPorIdAsync(int id)
+        [HttpPost("guardar")]
+        public async Task<IActionResult> CrearInscripcion([FromBody] InscripcionDto insDto)
         {
-            var ins = await _unitOfWork.InscripcionRepository.ObtenerPorIdAsync(id);
-            if (ins == null)
-                throw new BusinessException("Inscripción no encontrada", 404);
+            var entidad = _mapper.Map<Inscripcione>(insDto);
+            var result = await _inscripcionService.CrearInscripcionAsync(entidad);
+            if (!result.IsSuccess) return BadRequest(result.Message);
 
-            return ServiceResult<Inscripcione>.Success(ins);
+            var createdDto = _mapper.Map<InscripcionDto>(result.Data);
+            return CreatedAtAction(nameof(ObtenerInscripcion), new { id = createdDto.InscripcionId }, createdDto);
         }
 
-        public async Task<ServiceResult<Inscripcione>> CrearInscripcionAsync(Inscripcione inscripcion)
+        [HttpPut("actualizar/{id}")]
+        public async Task<IActionResult> ActualizarInscripcion(int id, [FromBody] InscripcionDto insDto)
         {
-            if (inscripcion == null)
-                throw new BusinessException("Inscripción nula", 400);
+            var entidad = _mapper.Map<Inscripcione>(insDto);
+            var result = await _inscripcionService.ActualizarInscripcionAsync(id, entidad);
+            if (!result.IsSuccess) return BadRequest(result.Message);
 
-            if (await _unitOfWork.InscripcionRepository.UsuarioInscriptoEnEventoAsync(inscripcion.UsuarioId, inscripcion.EventoId))
-                throw new BusinessException("Usuario ya inscrito en este evento", 400);
-
-            var evento = await _unitOfWork.EventoRepository.ObtenerPorIdAsync(inscripcion.EventoId);
-            if (evento == null)
-                throw new BusinessException("Evento no encontrado", 404);
-
-            var cantidad = evento.Inscripciones?.Count ?? 0;
-            if (cantidad >= evento.AforoMaximo)
-                throw new BusinessException("Evento lleno", 400);
-
-            await _unitOfWork.InscripcionRepository.CrearAsync(inscripcion);
-            await _unitOfWork.SaveChangesAsync();
-
-            return ServiceResult<Inscripcione>.Success(inscripcion, "Inscripción creada exitosamente");
+            var updatedDto = _mapper.Map<InscripcionDto>(result.Data);
+            return Ok(updatedDto);
         }
 
-        public async Task<ServiceResult<Inscripcione>> ActualizarInscripcionAsync(int id, Inscripcione inscripcion)
+        [HttpDelete("eliminar/{id}")]
+        public async Task<IActionResult> EliminarInscripcion(int id)
         {
-            var ins = await _unitOfWork.InscripcionRepository.ObtenerPorIdAsync(id);
-            if (ins == null)
-                throw new BusinessException("Inscripción no encontrada", 404);
-
-            ins.UsuarioId = inscripcion.UsuarioId;
-            ins.EventoId = inscripcion.EventoId;
-            ins.FechaInscripcion = inscripcion.FechaInscripcion;
-            ins.Asistencia = inscripcion.Asistencia;
-
-            _unitOfWork.InscripcionRepository.Actualizar(ins);
-            await _unitOfWork.SaveChangesAsync();
-
-            return ServiceResult<Inscripcione>.Success(ins, "Inscripción actualizada correctamente");
+            var result = await _inscripcionService.EliminarInscripcionAsync(id);
+            return result.IsSuccess ? NoContent() : BadRequest(result.Message);
         }
 
-        public async Task<ServiceResult<bool>> EliminarInscripcionAsync(int id)
+        // FILTRAR + PAGINACIÓN (recibe query params)
+        [HttpGet("filtrar")]
+        public async Task<IActionResult> FiltrarInscripciones([FromQuery] InscripcionQueryFilter filters)
         {
-            var ins = await _unitOfWork.InscripcionRepository.ObtenerPorIdAsync(id);
-            if (ins == null)
-                throw new BusinessException("Inscripción no encontrada", 404);
+            // Asume que ListarInscripcionesAsync retorna ServiceResult<PagedList<Inscripcione>>
+            var result = await _inscripcionService.ListarInscripcionesAsync(filters);
+            if (!result.IsSuccess) return BadRequest(result.Message);
 
-            _unitOfWork.InscripcionRepository.Eliminar(ins);
-            await _unitOfWork.SaveChangesAsync();
+            var paged = result.Data;
+            var dtos = _mapper.Map<IEnumerable<InscripcionDto>>(paged);
 
-            return ServiceResult<bool>.Success(true, "Inscripción eliminada correctamente");
+            var pagination = new Pagination
+            {
+                TotalCount = paged.TotalCount,
+                PageSize = paged.PageSize,
+                CurrentPage = paged.CurrentPage,
+                TotalPages = paged.TotalPages,
+                HasNextPage = paged.HasNextPage,
+                HasPreviousPage = paged.HasPreviousPage
+            };
+
+            var response = new ApiResponse<IEnumerable<InscripcionDto>>(dtos)
+            {
+                Pagination = pagination
+            };
+
+            return Ok(response);
         }
     }
 }

@@ -1,11 +1,11 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using TecWeb.Core.CustomEntities;
 using TecWeb.Core.Entities;
 using TecWeb.Core.Exceptions;
 using TecWeb.Core.Interfaces;
 using TecWeb.Core.QueryFilters;
-using TecWeb.Core.CustomEntities; // <- Para PagedList
 
 namespace TecWeb.Core.Services
 {
@@ -18,7 +18,7 @@ namespace TecWeb.Core.Services
             _unitOfWork = unitOfWork;
         }
 
-        // Método con filtros y paginación
+        // Listar con filtros y paginación -> devuelve PagedList dentro de ServiceResult
         public async Task<ServiceResult<PagedList<Inscripcione>>> ListarInscripcionesAsync(InscripcionQueryFilter filters = null)
         {
             var list = await _unitOfWork.InscripcionRepository.ListarAsync();
@@ -40,12 +40,10 @@ namespace TecWeb.Core.Services
                     query = query.Where(i => i.Asistencia == filters.Asistencia.Value);
             }
 
-            // Aplicar paginación
-            var pagedInscripciones = PagedList<Inscripcione>.Create(
-                query,
-                filters?.PageNumber ?? 1,
-                filters?.PageSize ?? 10
-            );
+            var pageNumber = filters?.PageNumber ?? 1;
+            var pageSize = filters?.PageSize ?? 10;
+
+            var pagedInscripciones = PagedList<Inscripcione>.Create(query, pageNumber, pageSize);
 
             return ServiceResult<PagedList<Inscripcione>>.Success(pagedInscripciones);
         }

@@ -15,7 +15,7 @@ namespace TecWeb.Core.Interfaces
         Task<ServiceResult<Evento>> ActualizarEventoAsync(int id, Evento evento);
         Task<ServiceResult<bool>> EliminarEventoAsync(int id);
 
-        // Cambiado a PagedList para paginación
+        // Cambiado a PagedList para paginación según manual
         Task<ServiceResult<PagedList<Evento>>> ListarEventosFiltradosAsync(EventoQueryFilter filters);
     }
 }

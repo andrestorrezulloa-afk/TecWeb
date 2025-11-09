@@ -93,6 +93,7 @@ namespace TecWeb.Core.Services
             var eventos = await _unitOfWork.EventoRepository.ListarAsync();
             var query = eventos.AsQueryable();
 
+            // Aplicar filtros
             if (filters.UsuarioId != null)
                 query = query.Where(e => e.UsuarioId == filters.UsuarioId);
 

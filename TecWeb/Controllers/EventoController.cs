@@ -2,10 +2,12 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using TecWeb.Core.CustomEntities; // <- Para PagedList y Pagination
 using TecWeb.Core.Entities;
 using TecWeb.Core.Interfaces;
 using TecWeb.Core.QueryFilters;
 using TecWeb.Infrastructure.DTOs;
+using Amazon.api.Responses; // <-- tu ApiResponse (asegúrate que exista)
 
 namespace TecWeb.Controllers
 {
@@ -45,13 +47,11 @@ namespace TecWeb.Controllers
         [HttpPost("guardar")]
         public async Task<IActionResult> CrearEvento([FromBody] EventoDto eventoDto)
         {
-            // DTO → Entidad
             var evento = _mapper.Map<Evento>(eventoDto);
 
             var result = await _eventoService.CrearEventoAsync(evento);
             if (!result.IsSuccess) return BadRequest(result.Message);
 
-            // Entidad → DTO
             var createdDto = _mapper.Map<EventoDto>(result.Data);
             return CreatedAtAction(nameof(ObtenerEvento), new { id = createdDto.EventoId }, createdDto);
         }
@@ -74,15 +74,35 @@ namespace TecWeb.Controllers
             return result.IsSuccess ? NoContent() : BadRequest(result.Message);
         }
 
+        // =============================================
+        // FILTRO + PAGINACIÓN
+        // =============================================
         [HttpGet("filtrar")]
         public async Task<IActionResult> ListarEventosFiltrados([FromQuery] EventoQueryFilter filters)
         {
             var result = await _eventoService.ListarEventosFiltradosAsync(filters);
             if (!result.IsSuccess) return BadRequest(result.Message);
 
-            var eventosDto = _mapper.Map<IEnumerable<EventoDto>>(result.Data);
-            return Ok(eventosDto);
-        }
+            var eventosPaged = result.Data; // PagedList<Evento>
+            var eventosDto = _mapper.Map<IEnumerable<EventoDto>>(eventosPaged);
 
+            // Mapear metadatos de paginación desde PagedList<Evento>
+            var pagination = new Pagination
+            {
+                TotalCount = eventosPaged.TotalCount,
+                PageSize = eventosPaged.PageSize,
+                CurrentPage = eventosPaged.CurrentPage,
+                TotalPages = eventosPaged.TotalPages,
+                HasNextPage = eventosPaged.HasNextPage,
+                HasPreviousPage = eventosPaged.HasPreviousPage
+            };
+
+            var response = new ApiResponse<IEnumerable<EventoDto>>(eventosDto)
+            {
+                Pagination = pagination
+            };
+
+            return Ok(response);
+        }
     }
 }
