@@ -15,14 +15,28 @@ using TecWeb.Infrastructure.Filters;
 using TecWeb.Infrastructure.Mappings;
 using TecWeb.Infrastructure.Repositories;
 using TecWeb.Infrastructure.Validators;
+using TecWeb.Core.CustomEntities;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configurar User Secrets en desarrollo
+// ============================================
+// CONFIGURACIÓN BASE PARA DESARROLLO/PRODUCCIÓN
+// ============================================
+builder.Configuration.Sources.Clear();
+builder.Configuration
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true);
+
 if (builder.Environment.IsDevelopment())
 {
     builder.Configuration.AddUserSecrets<Program>();
+    Console.WriteLine("? User Secrets habilitados para Desarrollo");
 }
+
+builder.Configuration.AddEnvironmentVariables();
+
+Console.WriteLine($"?? Ambiente: {builder.Environment.EnvironmentName}");
+Console.WriteLine($"?? Entorno: {builder.Environment.EnvironmentName}");
 
 // -------------------- DbContext --------------------
 builder.Services.AddDbContext<GestionCulturalContext>(options =>
@@ -35,10 +49,17 @@ builder.Services.AddAutoMapper(cfg =>
 
 }, typeof(MappingProfile));
 
+// Configurar PasswordOptions desde appsettings
+builder.Services.Configure<PasswordOptions>(
+    builder.Configuration.GetSection("PasswordOptions"));
+
 // ====================
 // Registrar Servicios
 // ====================
 builder.Services.AddControllers();
+
+builder.Services.AddTransient<IPasswordService, PasswordService>();
+builder.Services.AddTransient<IUserSecurityService, UserSecurityService>();
 
 // API Versioning
 builder.Services.AddApiVersioning(options =>
@@ -68,22 +89,61 @@ builder.Services.AddScoped<IEventoService, EventoService>();
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
 builder.Services.AddScoped<IInscripcionService, InscripcionService>();
 
-// -------------------- Swagger --------------------
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options =>
+// ============================================
+// CONFIGURACIÓN SWAGGER (SOLO DESARROLLO)
+// ============================================
+
+if (builder.Environment.IsDevelopment())
 {
-    options.SwaggerDoc("v1", new OpenApiInfo
+    builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddSwaggerGen(options =>
     {
-        Title = "Backend Social Media API",
-        Version = "v1",
-        Description = "Documentación de la API de Social Media - .NET 9",
-        Contact = new OpenApiContact
+        options.SwaggerDoc("v1", new OpenApiInfo
         {
-            Name = "Equipo de Desarrollo UCB",
-            Email = "desarrollo@ucb.edu.bo"
+            Title = "Gestión Cultural API",
+            Version = "v1",
+            Description = "API para gestión de eventos culturales - .NET 9",
+            Contact = new OpenApiContact
+            {
+                Name = "Equipo de Desarrollo",
+                Email = "desarrollo@ucb.edu.bo"
+            }
+        });
+
+        // Configurar seguridad JWT para Swagger
+        options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+        {
+            Description = "JWT Authorization header usando el esquema Bearer. Ejemplo: \"Authorization: Bearer {token}\"",
+            Name = "Authorization",
+            In = ParameterLocation.Header,
+            Type = SecuritySchemeType.ApiKey,
+            Scheme = "Bearer"
+        });
+
+        options.AddSecurityRequirement(new OpenApiSecurityRequirement
+        {
+            {
+                new OpenApiSecurityScheme
+                {
+                    Reference = new OpenApiReference
+                    {
+                        Type = ReferenceType.SecurityScheme,
+                        Id = "Bearer"
+                    }
+                },
+                Array.Empty<string>()
+            }
+        });
+
+        // Incluir comentarios XML si los tienes
+        var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+        var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+        if (File.Exists(xmlPath))
+        {
+            options.IncludeXmlComments(xmlPath);
         }
     });
-});
+}
 
 // -------------------- Configuración adicional del MVC --------------------
 builder.Services.AddControllers(options =>
@@ -128,21 +188,30 @@ builder.Services.AddTransient<IUnitOfWork, UnitOfWork>();
 builder.Services.AddSingleton<IDbConnectionFactory, DbConnectionFactory>();
 builder.Services.AddScoped<IDapperContext, DapperContext>();
 
-// Registrar UserSecurityService
+// Registrar UserSecurityService (ya está arriba, pero por si acaso)
 builder.Services.AddTransient<IUserSecurityService, UserSecurityService>();
 
 var app = builder.Build();
 
-// ===========================
-// Configuración Swagger UI
-// ===========================
+// ============================================
+// SWAGGER UI (SOLO EN DESARROLLO)
+// ============================================
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI(options =>
     {
-        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Backend Social Media API v1");
-        options.RoutePrefix = string.Empty;
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Gestión Cultural API v1");
+        options.RoutePrefix = "swagger";  // Acceder en /swagger
+        options.DocumentTitle = "Gestión Cultural - Documentación API";
+    });
+}
+else
+{
+    // En producción: redirigir root a página de información
+    app.MapGet("/", () =>
+    {
+        return Results.Redirect("/api/token/config");
     });
 }
 

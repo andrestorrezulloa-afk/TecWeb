@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TecWeb.Core.Entities;
-using TecWeb.Core.Interfaces;  // Ahora usa la interfaz de Core
+using TecWeb.Core.Interfaces;  
 using TecWeb.Infrastructure.Data;
 
 namespace TecWeb.Infrastructure.Repositories
@@ -11,11 +11,10 @@ namespace TecWeb.Infrastructure.Repositories
 
         public async Task<UserSecurity?> GetLoginByCredentials(UserLogin login)
         {
-            return await _entities
-                .FirstOrDefaultAsync(x => x.Login == login.User
-                    && x.PasswordHash == login.Password);
+            // Solo buscar por Login, NO por password
+            return await _entities.FirstOrDefaultAsync(x => x.Login == login.User);
         }
     }
 
-    // ¡ELIMINA la interfaz de este archivo! Ya está en Core
+    
 }
