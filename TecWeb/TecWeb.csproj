@@ -8,7 +8,8 @@
 		<!-- Habilitar comentarios XML para Swagger -->
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<NoWarn>$(NoWarn);1591</NoWarn>
-	</PropertyGroup>
+	  <UserSecretsId>88973d85-ce98-43f8-9f07-f05668b6c970</UserSecretsId>
+  </PropertyGroup>
 
 	<ItemGroup>
 		<!-- Mantenemos AutoMapper 15 (compatible con AddAutoMapper) -->
@@ -16,9 +17,12 @@
 
 		<!-- FluentValidation -->
 		<PackageReference Include="FluentValidation.AspNetCore" Version="11.3.1" />
+		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.0" />
 
 		<!-- Newtonsoft JSON -->
 		<PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="9.0.10" />
+		<PackageReference Include="Microsoft.AspNetCore.Mvc.Versioning" Version="5.1.0" />
+		<PackageReference Include="Microsoft.AspNetCore.Mvc.Versioning.ApiExplorer" Version="5.1.0" />
 
 		<!-- OpenAPI/Minimal APIs helper -->
 		<PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.10" />

@@ -11,7 +11,7 @@ namespace TecWeb.Core.Interfaces
         IEventoRepository EventoRepository { get; }
         IUsuarioRepository UsuarioRepository { get; }
         IInscripcionRepository InscripcionRepository { get; }
-
+        IUserSecurityRepository UserSecurityRepository { get; }
 
         Task SaveChangesAsync();
     }

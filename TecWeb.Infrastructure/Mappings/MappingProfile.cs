@@ -29,8 +29,8 @@ namespace TecWeb.Infrastructure.Mappings
                 .ForMember(dest => dest.Evento, opt => opt.Ignore())
                 .ForMember(dest => dest.Asistencia, opt => opt.MapFrom(src => src.Asistencia))
                 .ForMember(dest => dest.FechaInscripcion, opt => opt.MapFrom(src => src.FechaInscripcion ?? DateTime.UtcNow));
+            CreateMap<UserSecurity, UserSecurityDto>().ReverseMap();
 
-          
         }
     }
 }

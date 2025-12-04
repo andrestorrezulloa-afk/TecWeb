@@ -9,11 +9,12 @@ using TecWeb.Core.Interfaces;
 using TecWeb.Infrastructure.DTOs;
 using Amazon.api.Responses; // tu ApiResponse<T>
 
-namespace TecWeb.Controllers
+namespace TecWeb.Controllers.v1
 {
     [Produces("application/json")]
-    [Route("api/[controller]")]
     [ApiController]
+    [ApiVersion("1.0")]
+    [Route("api/v{version:apiVersion}/[controller]")]
     public class UsuarioController : ControllerBase
     {
         private readonly IUsuarioService _usuarioService;
@@ -79,7 +80,13 @@ namespace TecWeb.Controllers
             if (!result.IsSuccess) return BadRequest(result.Message);
 
             var createdDto = _mapper.Map<UsuarioDto>(result.Data);
-            return CreatedAtAction(nameof(ObtenerUsuario), new { id = createdDto.UsuarioId }, createdDto);
+
+            // Incluimos la versión en las route values para que CreatedAtAction genere la URL con /api/v1/...
+            return CreatedAtAction(
+                nameof(ObtenerUsuario),
+                new { version = "1.0", id = createdDto.UsuarioId },
+                createdDto
+            );
         }
 
         /// <summary>

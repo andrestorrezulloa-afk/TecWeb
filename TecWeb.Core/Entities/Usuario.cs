@@ -20,6 +20,9 @@ public partial class Usuario
 
     public DateTime? FechaRegistro { get; set; }
 
+    // NUEVO: Campo para contraseña
+    public string? Password { get; set; }
+
     [JsonIgnore]
     public virtual ICollection<Evento>? Eventos { get; set; } = new List<Evento>();
 

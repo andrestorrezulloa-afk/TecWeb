@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using TecWeb.Core.Entities;
 using System.Reflection;
+using TecWeb.Core.Entities;
+using TecWeb.Infrastructure.Data.Configurations;
 
 namespace TecWeb.Infrastructure.Data
 {
@@ -18,12 +19,16 @@ namespace TecWeb.Infrastructure.Data
         public virtual DbSet<Evento> Eventos { get; set; } = null!;
         public virtual DbSet<Inscripcione> Inscripciones { get; set; } = null!;
         public virtual DbSet<Usuario> Usuarios { get; set; } = null!;
-
+        public virtual DbSet<UserSecurity> UserSecurities { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             
             modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
             base.OnModelCreating(modelBuilder);
+            modelBuilder.ApplyConfiguration(new UserSecurityConfiguration());
+
+            OnModelCreatingPartial(modelBuilder);  // Dejamos esta línea
         }
+        partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
     }
 }

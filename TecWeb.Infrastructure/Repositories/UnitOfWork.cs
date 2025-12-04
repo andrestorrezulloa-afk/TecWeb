@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using TecWeb.Core.Interfaces;
 using TecWeb.Infrastructure.Data;
+using TecWeb.Infrastructure.Repositories;
 
 namespace TecWeb.Infrastructure.Repositories
 {
@@ -13,17 +14,18 @@ namespace TecWeb.Infrastructure.Repositories
         private readonly GestionCulturalContext _context;
         private readonly IDapperContext _dapper;
         private IDbContextTransaction? _efTransaction;
-
+        private IUserSecurityRepository? _userSecurityRepository;
         private IEventoRepository _eventoRepository;
         private IUsuarioRepository _usuarioRepository;
         private IInscripcionRepository _inscripcionRepository;
-
+       
         public UnitOfWork(GestionCulturalContext context, IDapperContext dapper)
         {
             _context = context;
             _dapper = dapper;
         }
-
+        public IUserSecurityRepository UserSecurityRepository =>
+       _userSecurityRepository ??= new UserSecurityRepository(_context);
         // Repositorios
         public IEventoRepository EventoRepository =>
             _eventoRepository ??= new EventoRepository(_context);

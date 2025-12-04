@@ -1,8 +1,13 @@
 using FluentValidation;
 using FluentValidation.AspNetCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Versioning;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.Text;
 using TecWeb.Core.Interfaces;
 using TecWeb.Core.Services;
 using TecWeb.Infrastructure.Data;
@@ -12,6 +17,12 @@ using TecWeb.Infrastructure.Repositories;
 using TecWeb.Infrastructure.Validators;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configurar User Secrets en desarrollo
+if (builder.Environment.IsDevelopment())
+{
+    builder.Configuration.AddUserSecrets<Program>();
+}
 
 // -------------------- DbContext --------------------
 builder.Services.AddDbContext<GestionCulturalContext>(options =>
@@ -27,11 +38,20 @@ builder.Services.AddAutoMapper(cfg =>
 // ====================
 // Registrar Servicios
 // ====================
-// (línea solicitada por el instructivo)
-//builder.Services.AddScoped<ICorrespondenciaService, CorrespondenciaService>();
-
-// registrar controladores
 builder.Services.AddControllers();
+
+// API Versioning
+builder.Services.AddApiVersioning(options =>
+{
+    options.ReportApiVersions = true;
+    options.AssumeDefaultVersionWhenUnspecified = true;
+    options.DefaultApiVersion = new ApiVersion(1, 0);
+    options.ApiVersionReader = ApiVersionReader.Combine(
+        new UrlSegmentApiVersionReader(),
+        new HeaderApiVersionReader("x-api-version"),
+        new QueryStringApiVersionReader("api-version")
+    );
+});
 
 // -------------------- FluentValidation (API moderna) --------------------
 builder.Services.AddFluentValidationAutoValidation();
@@ -77,10 +97,39 @@ builder.Services.AddControllers(options =>
     options.SuppressModelStateInvalidFilter = true;
 });
 
+// ========================
+// JWT AUTHENTICATION
+// ========================
+var secretKey = builder.Configuration["Authentication:SecretKey"]
+    ?? throw new InvalidOperationException("SecretKey no configurada");
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["Authentication:Issuer"],
+        ValidAudience = builder.Configuration["Authentication:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(secretKey))
+    };
+});
+
 // Registrar UnitOfWork, Dapper y factory
 builder.Services.AddTransient<IUnitOfWork, UnitOfWork>();
 builder.Services.AddSingleton<IDbConnectionFactory, DbConnectionFactory>();
 builder.Services.AddScoped<IDapperContext, DapperContext>();
+
+// Registrar UserSecurityService
+builder.Services.AddTransient<IUserSecurityService, UserSecurityService>();
 
 var app = builder.Build();
 
@@ -93,36 +142,18 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(options =>
     {
         options.SwaggerEndpoint("/swagger/v1/swagger.json", "Backend Social Media API v1");
-        options.RoutePrefix = string.Empty; // Swagger será accesible en la raíz
+        options.RoutePrefix = string.Empty;
     });
 }
-// -------------------- Swagger --------------------
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options =>
-{
-    options.SwaggerDoc("v1", new OpenApiInfo
-    {
-        Title = "Backend Social Media API",
-        Version = "v1",
-        Description = "Documentación de la API de Social Media - .NET 9",
-        Contact = new OpenApiContact
-        {
-            Name = "Equipo de Desarrollo UCB",
-            Email = "desarrollo@ucb.edu.bo"
-        }
-    });
-
-    // Incluir los comentarios XML generados a partir de tus DTOs y controladores
-    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
-    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-    options.IncludeXmlComments(xmlPath);
-});
-
 
 // ===========================
 // Middlewares habituales
 // ===========================
 app.UseHttpsRedirection();
+
+// ¡IMPORTANTE: En este orden!
+app.UseAuthentication();
 app.UseAuthorization();
+
 app.MapControllers();
 app.Run();
